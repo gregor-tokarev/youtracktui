@@ -6,7 +6,7 @@
     "packages/tui"
   ],
   "scripts": {
-    "dev": "bun run --env-file=.env --filter=@youtracktui/tui dev",
+    "dev": "bun run --cwd=packages/tui --env-file=../../.env dev",
     "build": "cd packages/tui && bun run build"
   },
   "devDependencies": {

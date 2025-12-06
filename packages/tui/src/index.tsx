@@ -1,3 +1,3 @@
 import { render } from "@opentui/solid"
 
-render(() => <text>Hello, World!</text>)
+render(() => <text>{Bun.env.YOUTRACK_PERM_TOKEN}</text>)

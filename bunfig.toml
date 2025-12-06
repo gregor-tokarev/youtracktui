@@ -1,2 +1,2 @@
-preload = ["@opentui/solid/preload"]
-
+[install]
+exact = true
