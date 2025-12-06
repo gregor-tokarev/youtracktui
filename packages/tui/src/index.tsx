@@ -1,3 +1,4 @@
-import { render } from "@opentui/solid"
+import { render } from "@opentui/solid";
+import { App } from "./App";
 
-render(() => <text>{Bun.env.YOUTRACK_PERM_TOKEN}</text>)
+render(() => <App />);
