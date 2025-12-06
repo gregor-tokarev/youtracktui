@@ -18,13 +18,20 @@ export function App() {
     token: Bun.env.YOUTRACK_PERM_TOKEN || "",
   });
 
+  const [projects] = createResource(async () => {
+    return youtrack.projects.list(["id", "name", "shortName"]);
+  });
+
   const [issues] = createResource(async () => {
     return youtrack.issues.search("assignee: me #Unresolved Type: Task", {
       fields: ["summary", "idReadable", "project(name)", "description", "assignee(fullName)", "reporter(fullName)", "state(name)", "tags(name)", "customFields(name,value(presentation,id,name,$type))", "created", "updated"],
     });
   });
 
+  const [focusedProjectIndex, setFocusedProjectIndex] = createSignal(0);
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
+  const [selectedProjectId, setSelectedProjectId] = createSignal<string | null>(null);
+  let projectScrollboxRef: ScrollBoxRenderable | undefined;
   let scrollboxRef: ScrollBoxRenderable | undefined;
 
   const selectedIssue = createMemo(() => {
@@ -45,6 +52,52 @@ export function App() {
       return;
     }
 
+    // Project navigation (when Tab is pressed, focus projects)
+    if (evt.name === "Tab" && !evt.shift) {
+      // Focus projects - handled by UI focus
+      return;
+    }
+
+    // Project scroll navigation
+    if (evt.name === "w") {
+      const totalProjects = projects()?.length || 0;
+      if (focusedProjectIndex() >= totalProjects - 1) return;
+
+      const newIndex = focusedProjectIndex() + 1;
+      setFocusedProjectIndex(newIndex);
+
+      if (projectScrollboxRef) {
+        const viewportHeight = projectScrollboxRef.viewport.height;
+        const scrollTop = projectScrollboxRef.scrollTop;
+        if (newIndex >= scrollTop + viewportHeight) {
+          projectScrollboxRef.scrollTo({ y: newIndex - viewportHeight + 1, x: 0 });
+        }
+      }
+    }
+
+    if (evt.name === "s") {
+      if (focusedProjectIndex() === 0) return;
+
+      const newIndex = focusedProjectIndex() - 1;
+      setFocusedProjectIndex(newIndex);
+
+      if (projectScrollboxRef) {
+        const scrollTop = projectScrollboxRef.scrollTop;
+        if (newIndex < scrollTop) {
+          projectScrollboxRef.scrollTo({ y: newIndex, x: 0 });
+        }
+      }
+    }
+
+    // Project selection
+    if (evt.name === "Enter") {
+      const project = projects()?.[focusedProjectIndex()];
+      if (project) {
+        setSelectedProjectId(project.id);
+      }
+    }
+
+    // Issue navigation
     if (evt.name === "j") {
       const totalItems = issues()?.data?.length || 0;
       if (focusedIssueIndex() >= totalItems - 1) return;
@@ -79,12 +132,33 @@ export function App() {
   return (
     <box flexGrow={1} height="100%" flexDirection="row">
       <scrollbox 
+        ref={projectScrollboxRef}
+        borderStyle="single" 
+        borderColor="gray" 
+        padding={1} 
+        height="100%" 
+        width="15%" 
+        title={projects.loading ? "Loading..." : `Projects (${projects()?.length || 0})`}
+      >
+        <Show when={projects()}>
+          <For each={projects()}>
+            {(project, index) => (
+              <text 
+                fg={index() === focusedProjectIndex() ? "white" : selectedProjectId() === project.id ? "yellow" : "gray"}
+              >
+                {truncateText(project.name || project.shortName || project.id || "", 20)}
+              </text>
+            )}
+          </For>
+        </Show>
+      </scrollbox>
+      <scrollbox 
         ref={scrollboxRef}
         borderStyle="single" 
         borderColor="gray" 
         padding={1} 
         height="100%" 
-        width="20%" 
+        width="25%" 
         title={issues.loading ? "Loading..." : `Issues (${issues()?.data?.length})`}
       >
         <Show when={issues()?.data}>
@@ -93,7 +167,7 @@ export function App() {
         </For>
         </Show>
       </scrollbox>
-      <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="80%" title="Selected Issue">
+      <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="60%" title="Selected Issue">
         <Show when={selectedIssue()}>
           <text>{selectedIssue()?.summary}</text>
           <text>{selectedIssue()?.description}</text>
