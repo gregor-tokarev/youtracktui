@@ -1,0 +1,13 @@
+{
+  "name": "@youtracktui/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

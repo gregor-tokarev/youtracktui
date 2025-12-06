@@ -1,0 +1,22 @@
+{
+  "name": "@youtracktui/tui",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "test": "bun test",
+    "build": "bun build.ts",
+    "start": "BUILD_OUTDIR=/tmp/youtracktui bun build.ts && /tmp/youtracktui/app-macos",
+    "dev": "BUILD_OUTDIR=/tmp/youtracktui bun build.ts && /tmp/youtracktui/app-macos"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.57",
+    "@opentui/solid": "^0.1.57",
+    "@youtracktui/sdk": "workspace:*",
+    "solid-js": "^1.9.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

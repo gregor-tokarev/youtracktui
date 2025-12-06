@@ -1,0 +1,22 @@
+{
+  "name": "youtracktui",
+  "private": true,
+  "workspaces": [
+    "packages/sdk",
+    "packages/tui"
+  ],
+  "scripts": {
+    "dev": "bun run --env-file=.env --filter=@youtracktui/tui dev",
+    "build": "cd packages/tui && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@opentui/solid": "^0.1.57",
+    "solid-js": "^1.9.10"
+  }
+}
