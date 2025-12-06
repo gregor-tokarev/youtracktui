@@ -4,8 +4,8 @@ import type { Project } from "@youtracktui/sdk/src/types";
 
 export function useProjects(sdk: () => YouTrackSDK | null) {
   const [projects] = createResource<Project[]>(
-    async () => {
-      const client = sdk();
+    sdk,
+    async (client) => {
       if (!client) return [];
       
       try {

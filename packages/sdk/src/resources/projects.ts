@@ -15,7 +15,7 @@ export class ProjectsResource {
     if (fields) {
       params.fields = Array.isArray(fields) ? fields.join(',') : fields;
     }
-    return this.client.get<Project[]>('/projects', params);
+    return this.client.get<Project[]>('/admin/projects', params);
   }
 
   /**
@@ -26,7 +26,7 @@ export class ProjectsResource {
     if (fields) {
       params.fields = Array.isArray(fields) ? fields.join(',') : fields;
     }
-    return this.client.get<Project>(`/projects/${id}`, params);
+    return this.client.get<Project>(`/admin/projects/${id}`, params);
   }
 
   /**
