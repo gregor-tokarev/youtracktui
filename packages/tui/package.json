@@ -7,7 +7,6 @@
   "scripts": {
     "test": "bun test",
     "build": "bun build.ts",
-    "start": "BUILD_OUTDIR=/tmp/youtracktui bun build.ts && /tmp/youtracktui/app-macos",
     "dev": "BUILD_OUTDIR=/tmp/youtracktui bun build.ts && /tmp/youtracktui/app-macos"
   },
   "dependencies": {
