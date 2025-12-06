@@ -74,6 +74,10 @@ export function App() {
         }
       }
     }
+
+    if (evt.name === "/") {
+      console.log("searching...")
+    }
   });
 
   return (
