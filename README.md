@@ -12,41 +12,51 @@ A beautiful terminal user interface (TUI) for YouTrack, built with SolidJS and O
 
 ## Installation
 
-### macOS
+### Quick Install (Recommended)
 
-#### Option 1: Homebrew (Recommended)
+Install the latest version with a single command:
 
-Tap the repository and install:
+```bash
+curl -fsSL https://raw.githubusercontent.com/gregor-tokarev/youtracktui/main/install.sh | bash
+```
+
+This script will:
+- Automatically detect your platform (macOS/Linux, Intel/ARM)
+- Download the latest release from GitHub
+- Install the binary to `/usr/local/bin` (or `/opt/homebrew/bin` for Apple Silicon)
+- Request sudo permissions if needed
+
+**macOS Note:** The binary is not code-signed. The install script attempts to remove the quarantine attribute, but if you see a security warning, you can allow it via System Settings → Privacy & Security → "Open Anyway", or run:
+
+```bash
+sudo xattr -cr /usr/local/bin/yt
+```
+
+### Alternative Installation Methods
+
+#### Homebrew (macOS)
 
 ```bash
 brew tap gregortokarev/youtracktui
 brew install yt
 ```
 
-#### Option 2: Download Pre-built Binary
+#### Manual Download
 
-1. Visit the [Releases](https://github.com/gregortokarev/youtracktui/releases) page
-2. Download the appropriate archive for your Mac:
-   - `yt-macos-arm64-v*.tar.gz` for Apple Silicon (M1/M2/M3)
+1. Visit the [Releases](https://github.com/gregor-tokarev/youtracktui/releases) page
+2. Download the appropriate archive for your platform:
+   - `yt-macos-arm64-v*.tar.gz` for Apple Silicon Macs (M1/M2/M3/M4)
    - `yt-macos-x64-v*.tar.gz` for Intel Macs
-3. Extract the archive:
+   - `yt-linux-arm64-v*.tar.gz` for ARM64 Linux
+   - `yt-linux-x64-v*.tar.gz` for x64 Linux
+3. Extract and install:
    ```bash
-   tar -xzf yt-macos-arm64-v*.tar.gz
-   ```
-4. Move the binary to a directory in your PATH:
-   ```bash
+   tar -xzf yt-*.tar.gz
    sudo mv yt /usr/local/bin/
-   ```
-   Or for Apple Silicon:
-   ```bash
-   sudo mv yt /opt/homebrew/bin/
-   ```
-5. Make it executable (if needed):
-   ```bash
    chmod +x /usr/local/bin/yt
    ```
 
-#### Option 3: Build from Source
+#### Build from Source
 
 1. Install [Bun](https://bun.sh):
    ```bash
@@ -55,7 +65,7 @@ brew install yt
 
 2. Clone the repository:
    ```bash
-   git clone https://github.com/gregortokarev/youtracktui.git
+   git clone https://github.com/gregor-tokarev/youtracktui.git
    cd youtracktui
    ```
 
@@ -69,7 +79,10 @@ brew install yt
    bun run build:release
    ```
 
-5. The binary will be in `dist/yt-macos-arm64/yt` (or `dist/yt-macos-x64/yt` for Intel Macs)
+5. Install the binary:
+   ```bash
+   sudo mv dist/yt-*/yt /usr/local/bin/
+   ```
 
 ## Configuration
 
