@@ -1,19 +1,8 @@
-/**
- * Core YouTrack API Types
- * Based on YouTrack REST API documentation
- */
-
-/**
- * Base entity with ID
- */
 export interface BaseEntity {
   id: string;
   $type?: string;
 }
 
-/**
- * User entity
- */
 export interface User extends BaseEntity {
   name?: string;
   login?: string;
@@ -23,17 +12,11 @@ export interface User extends BaseEntity {
   guest?: boolean;
 }
 
-/**
- * Project reference
- */
 export interface ProjectRef extends BaseEntity {
   shortName?: string;
   name?: string;
 }
 
-/**
- * Project entity
- */
 export interface Project extends ProjectRef {
   description?: string;
   archived?: boolean;
@@ -44,9 +27,6 @@ export interface Project extends ProjectRef {
   customFields?: ProjectCustomField[];
 }
 
-/**
- * Custom field value
- */
 export interface CustomFieldValue {
   name?: string;
   value?: string | number | boolean;
@@ -55,9 +35,6 @@ export interface CustomFieldValue {
   presentation?: string;
 }
 
-/**
- * Issue custom field
- */
 export interface IssueCustomField {
   name: string;
   value?: CustomFieldValue | CustomFieldValue[];
@@ -66,9 +43,6 @@ export interface IssueCustomField {
   presentation?: string;
 }
 
-/**
- * Issue entity
- */
 export interface Issue extends BaseEntity {
   idReadable?: string;
   summary?: string;
@@ -87,27 +61,18 @@ export interface Issue extends BaseEntity {
   comments?: Comment[];
 }
 
-/**
- * State (e.g., Unresolved, Fixed, etc.)
- */
 export interface State extends BaseEntity {
   name?: string;
   resolved?: boolean;
   color?: Color;
 }
 
-/**
- * Color
- */
 export interface Color {
   id?: string;
   background?: string;
   foreground?: string;
 }
 
-/**
- * Tag
- */
 export interface Tag extends BaseEntity {
   name?: string;
   visibleForProject?: boolean;
@@ -117,24 +82,15 @@ export interface Tag extends BaseEntity {
   updateSharingSettings?: SharingSettings;
 }
 
-/**
- * Sharing settings
- */
 export interface SharingSettings {
   permittedGroups?: UserGroup[];
   permittedUsers?: User[];
 }
 
-/**
- * User group
- */
 export interface UserGroup extends BaseEntity {
   name?: string;
 }
 
-/**
- * Comment
- */
 export interface Comment extends BaseEntity {
   text?: string;
   author?: User;
@@ -144,17 +100,11 @@ export interface Comment extends BaseEntity {
   visibility?: Visibility;
 }
 
-/**
- * Visibility
- */
 export interface Visibility extends BaseEntity {
   permittedGroups?: UserGroup[];
   permittedUsers?: User[];
 }
 
-/**
- * Activity item
- */
 export interface ActivityItem extends BaseEntity {
   type?: string;
   author?: User;
@@ -166,9 +116,6 @@ export interface ActivityItem extends BaseEntity {
   field?: CustomField;
 }
 
-/**
- * Custom field definition
- */
 export interface CustomField extends BaseEntity {
   name?: string;
   fieldType?: FieldType;
@@ -177,32 +124,20 @@ export interface CustomField extends BaseEntity {
   isPublic?: boolean;
 }
 
-/**
- * Field type
- */
 export interface FieldType extends BaseEntity {
   valueType?: string;
 }
 
-/**
- * Bundle (for enum-like custom fields)
- */
 export interface Bundle extends BaseEntity {
   name?: string;
   values?: BundleValue[];
 }
 
-/**
- * Bundle value
- */
 export interface BundleValue extends BaseEntity {
   name?: string;
   ordinal?: number;
 }
 
-/**
- * Project custom field
- */
 export interface ProjectCustomField extends BaseEntity {
   name?: string;
   customField?: CustomField;
@@ -211,9 +146,6 @@ export interface ProjectCustomField extends BaseEntity {
   isPublic?: boolean;
 }
 
-/**
- * Agile board
- */
 export interface AgileBoard extends BaseEntity {
   name?: string;
   sprints?: Sprint[];
@@ -221,9 +153,6 @@ export interface AgileBoard extends BaseEntity {
   projects?: ProjectRef[];
 }
 
-/**
- * Sprint
- */
 export interface Sprint extends BaseEntity {
   name?: string;
   goal?: string;
@@ -233,18 +162,12 @@ export interface Sprint extends BaseEntity {
   agile?: AgileBoard;
 }
 
-/**
- * Column (on agile board)
- */
 export interface Column extends BaseEntity {
   name?: string;
   ordinal?: number;
   resolved?: boolean;
 }
 
-/**
- * Work item
- */
 export interface WorkItem extends BaseEntity {
   date?: number;
   duration?: Duration;
@@ -255,24 +178,15 @@ export interface WorkItem extends BaseEntity {
   description?: string;
 }
 
-/**
- * Duration
- */
 export interface Duration {
   minutes?: number;
   presentation?: string;
 }
 
-/**
- * Work item type
- */
 export interface WorkItemType extends BaseEntity {
   name?: string;
 }
 
-/**
- * Search options
- */
 export interface SearchOptions {
   fields?: string | string[];
   top?: number;
@@ -280,9 +194,6 @@ export interface SearchOptions {
   query?: string;
 }
 
-/**
- * Paginated response
- */
 export interface PaginatedResponse<T> {
   data: T[];
   total?: number;
@@ -290,9 +201,6 @@ export interface PaginatedResponse<T> {
   top?: number;
 }
 
-/**
- * YouTrack SDK configuration
- */
 export interface YouTrackConfig {
   baseUrl: string;
   token: string;
@@ -300,9 +208,6 @@ export interface YouTrackConfig {
   timeout?: number;
 }
 
-/**
- * Request options
- */
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: any;
@@ -310,4 +215,3 @@ export interface RequestOptions {
   params?: Record<string, string | number | boolean | undefined>;
   returnHeaders?: boolean;
 }
-

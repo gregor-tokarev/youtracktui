@@ -1,8 +1,5 @@
 import type { YouTrackConfig, RequestOptions } from './types';
 
-/**
- * YouTrack API Error
- */
 export class YouTrackError extends Error {
   constructor(
     message: string,
@@ -15,9 +12,6 @@ export class YouTrackError extends Error {
   }
 }
 
-/**
- * Core YouTrack API Client
- */
 export class YouTrackClient {
   private baseUrl: string;
   private token: string;
@@ -31,9 +25,6 @@ export class YouTrackClient {
     this.timeout = config.timeout ?? 30000;
   }
 
-  /**
-   * Make a request to the YouTrack API
-   */
   protected async request<T>(
     endpoint: string,
     options: RequestOptions = {}
@@ -42,16 +33,12 @@ export class YouTrackClient {
     return result.data;
   }
 
-  /**
-   * Make a request to the YouTrack API and return both data and response
-   */
   protected async requestWithResponse<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<{ data: T; response: Response }> {
     const url = new URL(`${this.baseUrl}/api${endpoint}`);
 
-    // Add query parameters
     if (options.params) {
       for (const [key, value] of Object.entries(options.params)) {
         if (value !== undefined && value !== null) {
@@ -108,7 +95,6 @@ export class YouTrackClient {
               }
             }
           } catch {
-            // Ignore parsing errors
           }
 
           throw new YouTrackError(
@@ -119,7 +105,6 @@ export class YouTrackClient {
           );
         }
 
-        // Handle empty responses
         const contentType = response.headers.get('content-type');
         if (!contentType?.includes('application/json')) {
           return { data: {} as T, response };
@@ -130,7 +115,6 @@ export class YouTrackClient {
       } catch (error) {
         lastError = error as Error;
 
-        // Don't retry on client errors (4xx) or if it's the last attempt
         if (
           error instanceof YouTrackError &&
           error.status &&
@@ -141,7 +125,6 @@ export class YouTrackClient {
         }
 
         if (attempt < this.maxRetries) {
-          // Exponential backoff
           const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
@@ -152,16 +135,10 @@ export class YouTrackClient {
     throw lastError || new Error('Request failed after retries');
   }
 
-  /**
-   * GET request
-   */
   public get<T>(endpoint: string, params?: RequestOptions['params']): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', params });
   }
 
-  /**
-   * GET request with response (for accessing headers)
-   */
   public async getWithResponse<T>(
     endpoint: string,
     params?: RequestOptions['params']
@@ -169,9 +146,6 @@ export class YouTrackClient {
     return this.requestWithResponse<T>(endpoint, { method: 'GET', params });
   }
 
-  /**
-   * POST request
-   */
   public post<T>(
     endpoint: string,
     body?: any,
@@ -180,9 +154,6 @@ export class YouTrackClient {
     return this.request<T>(endpoint, { method: 'POST', body, params });
   }
 
-  /**
-   * PUT request
-   */
   public put<T>(
     endpoint: string,
     body?: any,
@@ -191,9 +162,6 @@ export class YouTrackClient {
     return this.request<T>(endpoint, { method: 'PUT', body, params });
   }
 
-  /**
-   * PATCH request
-   */
   public patch<T>(
     endpoint: string,
     body?: any,
@@ -202,9 +170,6 @@ export class YouTrackClient {
     return this.request<T>(endpoint, { method: 'PATCH', body, params });
   }
 
-  /**
-   * DELETE request
-   */
   public delete<T>(endpoint: string, params?: RequestOptions['params']): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE', params });
   }

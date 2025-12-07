@@ -1,6 +1,6 @@
-import { createSignal, For, Show, onCleanup, type Resource } from "solid-js";
-import { useKeyboard } from "@opentui/solid";
-import type { ScrollBoxRenderable } from "@opentui/core";
+import { createSignal, For, Show, onCleanup, createMemo, type Resource } from "solid-js";
+import { useKeyboard  } from "@opentui/solid";
+import type { ScrollBoxRenderable, InputRenderable } from "@opentui/core";
 
 function truncateText(text: string, maxWidth: number): string {
   if (text.length <= maxWidth) {
@@ -16,13 +16,14 @@ interface IssuesListProps {
 
 export function IssuesList(props: IssuesListProps) {
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
+  const [searchQuery, setSearchQuery] = createSignal("");
   let scrollboxRef: ScrollBoxRenderable | undefined;
+  let searchInputRef: InputRenderable | undefined;
 
   const setScrollboxRef = (ref: ScrollBoxRenderable | undefined) => {
     scrollboxRef = ref;
   };
 
-  // Animated spinner
   const spinnerFrames = ["/", "|", "\\", "—"];
   const [spinnerIndex, setSpinnerIndex] = createSignal(0);
   
@@ -32,10 +33,38 @@ export function IssuesList(props: IssuesListProps) {
   
   onCleanup(() => clearInterval(spinnerInterval));
 
-  // Keyboard navigation logic
+  const [searchOpen, setSearchOpen] = createSignal(false);
+
+  const filteredIssues = createMemo(() => {
+    const issues = props.issues()?.data || [];
+    const query = searchQuery().toLowerCase().trim();
+    
+    if (!query) {
+      return issues;
+    }
+    
+    return issues.filter((issue: any) => {
+      const summary = (issue.summary || "").toLowerCase();
+      const idReadable = (issue.idReadable || "").toLowerCase();
+      
+      return summary.includes(query) || idReadable.includes(query);
+    });
+  });
+
+  const handleSearchSubmit = () => {
+    setSearchOpen(false);
+    setFocusedIssueIndex(0);
+    
+    if (searchInputRef) {
+      searchInputRef.blur();
+    }
+  };
+
   useKeyboard((evt) => {
     if (evt.name === "j") {
-      const totalItems = props.issues()?.data?.length || 0;
+      if (searchOpen()) return;
+
+      const totalItems = filteredIssues().length;
       if (focusedIssueIndex() >= totalItems - 1) return;
 
       const newIndex = focusedIssueIndex() + 1;
@@ -52,7 +81,7 @@ export function IssuesList(props: IssuesListProps) {
     }
 
     if (evt.name === "k") {
-      if (focusedIssueIndex() === 0) return;
+      if (focusedIssueIndex() === 0 || searchOpen()) return;
 
       const newIndex = focusedIssueIndex() - 1;
       setFocusedIssueIndex(newIndex);
@@ -65,20 +94,55 @@ export function IssuesList(props: IssuesListProps) {
         }
       }
     }
+
+    if (evt.name === "/") {
+      setSearchOpen(!searchOpen());
+
+      if (searchInputRef) {
+        setTimeout(() => {
+          searchInputRef.focus();
+        }, 0);
+      }
+    }
+
+    if (evt.name === "escape") {
+      if (searchOpen()) {
+        setSearchOpen(false);
+        setSearchQuery("");
+        setFocusedIssueIndex(0);
+
+        if (searchInputRef) searchInputRef.blur();
+      }
+    }
   });
 
-  return (
+  return ( 
+  <box flexDirection="column" width="20%">
+    <Show when={searchOpen()}>
+      <box height={3} borderStyle="single" borderColor="gray">
+        <input 
+          ref={searchInputRef} 
+          placeholder="Search issues" 
+          focusedTextColor="gray" 
+          backgroundColor="transparent" 
+          focusedBackgroundColor="transparent"
+          value={searchQuery()}
+          onInput={setSearchQuery}
+          onSubmit={handleSearchSubmit}
+        />
+      </box>
+    </Show>
     <scrollbox 
       ref={setScrollboxRef}
       borderStyle="single" 
       borderColor="gray" 
+      flexGrow={1}
       padding={1} 
-      height="100%" 
-      width="20%" 
-      title={props.issues.loading ? `${spinnerFrames[spinnerIndex()]} Loading` : `[1] Issues (${props.issues()?.data?.length})`}
+      height={searchOpen() ? "80%" : "100%"} 
+      title={props.issues.loading ? `${spinnerFrames[spinnerIndex()]} Loading` : `[1] Issues (${filteredIssues().length}/${props.issues()?.data?.length || 0})`}
     >
       <Show when={props.issues()?.data}>
-        <For each={props.issues()?.data}>
+        <For each={filteredIssues()}>
           {(issue, index) => (
             <text fg={index() === focusedIssueIndex() ? "white" : "gray"}>
               {truncateText(issue.summary || "", 30)}
@@ -87,5 +151,6 @@ export function IssuesList(props: IssuesListProps) {
         </For>
       </Show>
     </scrollbox>
+  </box>
   );
 }

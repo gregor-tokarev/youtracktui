@@ -13,6 +13,15 @@ Default to using Bun instead of Node.js.
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
 - Bun automatically loads .env, so don't use dotenv.
 
+## Code Style
+
+- Do not write any code comments in source files. This includes:
+  - Single-line comments (`//`)
+  - Multi-line comments (`/* */`)
+  - JSDoc comments (`/** */`)
+  - JSX comments (`{/* */}`)
+- Code should be self-documenting through clear naming and structure.
+
 ## APIs
 
 - `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.

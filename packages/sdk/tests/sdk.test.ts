@@ -32,8 +32,6 @@ describe('YouTrackSDK', () => {
       token: 'test-token',
     });
 
-    // The baseUrl normalization happens internally, but we can verify
-    // the SDK instance is created successfully
     expect(sdk).toBeInstanceOf(YouTrackSDK);
   });
 });
