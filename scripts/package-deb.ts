@@ -11,9 +11,14 @@ const debianVersion = version.replace(/^v/, "")
 const debianDir = join(debDir, `${packageName}_${debianVersion}`)
 const debianDataDir = join(debianDir, "DEBIAN")
 const debianUsrBinDir = join(debianDir, "usr", "bin")
+const extractDir = join(distDir, "yt-linux-x64")
 
 await mkdir(debianDataDir, { recursive: true })
 await mkdir(debianUsrBinDir, { recursive: true })
+await mkdir(extractDir, { recursive: true })
+
+const tarPath = join(distDir, `yt-linux-x64-v${version}.tar.gz`)
+await $`tar -xzf ${tarPath} -C ${extractDir}`
 
 const controlContent = `Package: ${packageName}
 Version: ${debianVersion}
@@ -28,7 +33,7 @@ Homepage: https://github.com/gregortokarev/youtracktui
 
 await writeFile(join(debianDataDir, "control"), controlContent)
 
-const binaryPath = join(distDir, "yt-linux-x64", "yt")
+const binaryPath = join(extractDir, "yt")
 await $`cp ${binaryPath} ${debianUsrBinDir}/${packageName}`
 
 const debFile = join(distDir, `${packageName}_${debianVersion}_amd64.deb`)
