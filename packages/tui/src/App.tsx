@@ -2,6 +2,8 @@ import { YouTrackSDK } from "@youtracktui/sdk";
 import { createResource, createSignal, Show, createMemo } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
 import { IssuesList } from "./components/IssuesList";
+import { KeybindingsToolbar } from "./components/Toolbar";
+import { KeybindingsModal } from "./components/KeybindingsModal";
 
 export function App() {
   const renderer = useRenderer();
@@ -29,6 +31,8 @@ export function App() {
   });
 
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
+  const [keybindingsModalOpen, setKeybindingsModalOpen] = createSignal(false);
+  const [urlCopiedMessage, setUrlCopiedMessage] = createSignal(false);
 
   const selectedIssue = createMemo(() => {
     const data = issues()?.data;
@@ -43,6 +47,17 @@ export function App() {
       process.exit(0);
     }
 
+    if ((evt.shift && evt.name === "/") || evt.name === "?") {
+      setKeybindingsModalOpen(!keybindingsModalOpen());
+      return;
+    }
+
+    if (evt.name === "escape" && keybindingsModalOpen()) {
+      setKeybindingsModalOpen(false);
+      return;
+    }
+
+
     if (evt.name === "`") {
       renderer.console.toggle();
       return;
@@ -50,22 +65,31 @@ export function App() {
   });
 
   return (
-    <box flexGrow={1} height="100%" flexDirection="row">
-      <IssuesList 
-        issues={issues}
-        onFocusedIndexChange={setFocusedIssueIndex}
-      />
-      <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="65%" title={`Selected Issue: ${selectedIssue()?.summary}`}>
-        <Show when={selectedIssue()}>
-          <text>{selectedIssue()?.description}</text>
-        </Show>
-      </scrollbox>
-      <box width="15%" borderStyle="single" borderColor="gray" padding={1}>
-        <Show when={selectedIssue()}>
-          <text>Reporter:</text>
-          <text>@{selectedIssue()?.reporter?.login}</text>
-        </Show>
+    <box flexGrow={1} height="100%" flexDirection="column">
+      <box flexGrow={1} flexDirection="row">
+        <IssuesList 
+          issues={issues}
+          onFocusedIndexChange={setFocusedIssueIndex}
+          modalOpen={keybindingsModalOpen()}
+          onUrlCopied={() => {
+            setUrlCopiedMessage(true);
+            setTimeout(() => setUrlCopiedMessage(false), 1500);
+          }}
+        />
+        <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="65%" title={`Selected Issue: ${selectedIssue()?.summary}`}>
+          <Show when={selectedIssue()}>
+            <text>{selectedIssue()?.description}</text>
+          </Show>
+        </scrollbox>
+        <box width="15%" borderStyle="single" borderColor="gray" padding={1}>
+          <Show when={selectedIssue()}>
+            <text>Reporter:</text>
+            <text>@{selectedIssue()?.reporter?.login}</text>
+          </Show>
+        </box>
       </box>
+      <KeybindingsToolbar urlCopied={urlCopiedMessage()} />
+      <KeybindingsModal open={keybindingsModalOpen()} onClose={() => setKeybindingsModalOpen(false)} />
     </box>
   );
 }

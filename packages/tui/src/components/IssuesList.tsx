@@ -8,6 +8,8 @@ import { truncateText } from "../utils/text";
 interface IssuesListProps {
   issues: Resource<PaginatedResponse<Issue>>;
   onFocusedIndexChange?: (index: number) => void;
+  modalOpen?: boolean;
+  onUrlCopied?: () => void;
 }
 
 export function IssuesList(props: IssuesListProps) {
@@ -72,6 +74,8 @@ export function IssuesList(props: IssuesListProps) {
   };
 
   useKeyboard((evt) => {
+    if (props.modalOpen) return;
+
     if (evt.name === "/") {
       setSearchOpen(!searchOpen());
 
@@ -133,6 +137,7 @@ export function IssuesList(props: IssuesListProps) {
         if (issue?.idReadable) {
           const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issue.idReadable}`;
           copyToClipboard(url);
+          props.onUrlCopied?.();
         }
       }
     }
@@ -157,6 +162,7 @@ export function IssuesList(props: IssuesListProps) {
         const slackLink = `${issue?.idReadable}_`;
 
         copyToClipboard(slackLink);
+        props.onUrlCopied?.();
       }
     }
 
