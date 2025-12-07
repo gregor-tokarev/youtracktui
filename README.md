@@ -40,13 +40,6 @@ To get a permanent token:
 2. Navigate to Settings → Authentication → Permanent Tokens
 3. Create a new token with appropriate permissions
 
-set vars in your `~/.zshrc | ~/.bashrc` file
-
-```env
-YOUTRACK_BASE_URL=https://your-instance.youtrack.cloud
-YOUTRACK_PERM_TOKEN=your-permanent-token
-```
-
 ## Usage
 
 Run the application:
