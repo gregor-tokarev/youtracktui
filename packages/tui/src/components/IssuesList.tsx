@@ -95,6 +95,14 @@ export function IssuesList(props: IssuesListProps) {
       }
     }
 
+    if (evt.name === "o") {
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issues[focusedIssueIndex()].idReadable}`;
+        Bun.spawn(["open", url]);
+      }
+    }
+
     if (evt.name === "/") {
       setSearchOpen(!searchOpen());
 
