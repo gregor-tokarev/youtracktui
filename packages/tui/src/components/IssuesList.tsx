@@ -1,11 +1,12 @@
 import { createSignal, For, Show, onCleanup, createMemo, type Resource } from "solid-js";
 import { useKeyboard  } from "@opentui/solid";
 import type { ScrollBoxRenderable, InputRenderable } from "@opentui/core";
+import type { Issue, PaginatedResponse } from "@youtracktui/sdk";
 import { copyToClipboard } from "../utils/clipboard";
 import { truncateText } from "../utils/text";
 
 interface IssuesListProps {
-  issues: Resource<any>;
+  issues: Resource<PaginatedResponse<Issue>>;
   onFocusedIndexChange?: (index: number) => void;
 }
 
@@ -38,12 +39,27 @@ export function IssuesList(props: IssuesListProps) {
       return issues;
     }
     
-    return issues.filter((issue: any) => {
+    return issues.filter((issue: Issue) => {
       const summary = (issue.summary || "").toLowerCase();
       const idReadable = (issue.idReadable || "").toLowerCase();
       
       return summary.includes(query) || idReadable.includes(query);
     });
+  });
+
+  const title = createMemo(() => {
+    if (props.issues.loading) {
+      return `${spinnerFrames[spinnerIndex()]} Loading`;
+    }
+    
+    const totalIssues = props.issues()?.data?.length || 0;
+    const hasSearch = searchQuery().trim() !== "";
+    
+    if (hasSearch) {
+      return `[1] Issues (${filteredIssues().length}/${totalIssues})`;
+    }
+    
+    return `[1] Issues (${totalIssues})`;
   });
 
   const handleSearchSubmit = () => {
@@ -56,69 +72,6 @@ export function IssuesList(props: IssuesListProps) {
   };
 
   useKeyboard((evt) => {
-    if (evt.name === "j") {
-      if (searchOpen()) return;
-
-      const totalItems = filteredIssues().length;
-      if (focusedIssueIndex() >= totalItems - 1) return;
-
-      const newIndex = focusedIssueIndex() + 1;
-      setFocusedIssueIndex(newIndex);
-      props.onFocusedIndexChange?.(newIndex);
-
-      if (scrollboxRef) {
-        const viewportHeight = scrollboxRef.viewport.height;
-        const scrollTop = scrollboxRef.scrollTop;
-        if (newIndex >= scrollTop + viewportHeight) {
-          scrollboxRef.scrollTo({ y: newIndex - viewportHeight + 1, x: 0 });
-        }
-      }
-    }
-
-    if (evt.name === "k") {
-      if (focusedIssueIndex() === 0 || searchOpen()) return;
-
-      const newIndex = focusedIssueIndex() - 1;
-      setFocusedIssueIndex(newIndex);
-      props.onFocusedIndexChange?.(newIndex);
-
-      if (scrollboxRef) {
-        const scrollTop = scrollboxRef.scrollTop;
-        if (newIndex < scrollTop) {
-          scrollboxRef.scrollTo({ y: newIndex, x: 0 });
-        }
-      }
-    }
-
-    if (evt.ctrl && evt.name === "y") {
-      const issues = filteredIssues();
-      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
-        const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issues[focusedIssueIndex()].idReadable}`;
-        copyToClipboard(url);
-      }
-    }
-
-    if (evt.name === "o") {
-      const issues = filteredIssues();
-      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
-        const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issues[focusedIssueIndex()].idReadable}`;
-        Bun.spawn(["open", url]);
-      }
-    }
-
-    if (evt.name === "y") {
-      if (searchOpen()) return;
-      
-      const issues = filteredIssues();
-      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
-        const issue = issues[focusedIssueIndex()];
-        const slackLink = `${issue.idReadable}_`;
-
-        copyToClipboard(slackLink);
-      }
-    }
-
-
     if (evt.name === "/") {
       setSearchOpen(!searchOpen());
 
@@ -138,6 +91,75 @@ export function IssuesList(props: IssuesListProps) {
         if (searchInputRef) searchInputRef.blur();
       }
     }
+
+    if (searchOpen()) return;
+
+    if (evt.name === "j") {
+      const totalItems = filteredIssues().length;
+      if (focusedIssueIndex() >= totalItems - 1) return;
+
+      const newIndex = focusedIssueIndex() + 1;
+      setFocusedIssueIndex(newIndex);
+      props.onFocusedIndexChange?.(newIndex);
+
+      if (scrollboxRef) {
+        const viewportHeight = scrollboxRef.viewport.height;
+        const scrollTop = scrollboxRef.scrollTop;
+        if (newIndex >= scrollTop + viewportHeight) {
+          scrollboxRef.scrollTo({ y: newIndex - viewportHeight + 1, x: 0 });
+        }
+      }
+    }
+
+    if (evt.name === "k") {
+      if (focusedIssueIndex() === 0) return;
+
+      const newIndex = focusedIssueIndex() - 1;
+      setFocusedIssueIndex(newIndex);
+      props.onFocusedIndexChange?.(newIndex);
+
+      if (scrollboxRef) {
+        const scrollTop = scrollboxRef.scrollTop;
+        if (newIndex < scrollTop) {
+          scrollboxRef.scrollTo({ y: newIndex, x: 0 });
+        }
+      }
+    }
+
+    if (evt.ctrl && evt.name === "y") {
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const issue = issues[focusedIssueIndex()];
+        if (issue?.idReadable) {
+          const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issue.idReadable}`;
+          copyToClipboard(url);
+        }
+      }
+    }
+
+    if (evt.name === "o") {
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const issue = issues[focusedIssueIndex()];
+        if (issue?.idReadable) {
+          const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issue.idReadable}`;
+          Bun.spawn(["open", url]);
+        }
+      }
+    }
+
+    if (evt.name === "y") {
+      if (searchOpen()) return;
+      
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const issue = issues[focusedIssueIndex()];
+        const slackLink = `${issue?.idReadable}_`;
+
+        copyToClipboard(slackLink);
+      }
+    }
+
   });
 
   return ( 
@@ -163,7 +185,7 @@ export function IssuesList(props: IssuesListProps) {
       flexGrow={1}
       padding={1} 
       height={searchOpen() ? "80%" : "100%"} 
-      title={props.issues.loading ? `${spinnerFrames[spinnerIndex()]} Loading` : `[1] Issues (${filteredIssues().length}/${props.issues()?.data?.length || 0})`}
+      title={title()}
     >
       <Show when={props.issues()?.data}>
         <For each={filteredIssues()}>
