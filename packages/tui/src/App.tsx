@@ -1,9 +1,13 @@
-import { YouTrackSDK } from "@youtracktui/sdk";
+import { YouTrackSDK, type BundleValue } from "@youtracktui/sdk";
 import { createResource, createSignal, Show, createMemo } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
 import { IssuesList } from "./components/IssuesList";
 import { KeybindingsToolbar } from "./components/Toolbar";
 import { KeybindingsModal } from "./components/KeybindingsModal";
+import { StateModal } from "./components/StateModal";
+import { useSearch } from "./hooks/useSearch";
+import { useFilter } from "./hooks/useFilter";
+import type { Issue } from "@youtracktui/sdk";
 
 export function App() {
   const renderer = useRenderer();
@@ -13,17 +17,19 @@ export function App() {
     token: Bun.env.YOUTRACK_PERM_TOKEN || "",
   });
 
-  const [issues] = createResource(async () => {
-    return youtrack.issues.search("assignee: me #Unresolved Type: Task", {
+  const [issuesRefreshTrigger] = createSignal(0);
+
+  const [issues, { mutate: mutateIssues }] = createResource(issuesRefreshTrigger, async () => {
+    return youtrack.issues.search("assignee: me #Unresolved Type: Task sort by: created desc", {
       fields: [
+        "id",
         "summary",
         "idReadable",
-        "project(name)",
+        "project(id,name)",
         "description",
         "reporter(login)",
-        "state(name)",
-        "tags(name)",
-        "customFields(name,value(presentation,id,name,$type))",
+        "state(id,name,resolved)",
+        "customFields(id,name,value(presentation,id,name,$type))",
         "created",
         "updated",
       ],
@@ -32,13 +38,63 @@ export function App() {
 
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
   const [keybindingsModalOpen, setKeybindingsModalOpen] = createSignal(false);
+  const [stateModalOpen, setStateModalOpen] = createSignal(false);
   const [urlCopiedMessage, setUrlCopiedMessage] = createSignal(false);
 
-  const selectedIssue = createMemo(() => {
-    const data = issues()?.data;
-    const idx = focusedIssueIndex();
+  const {
+    searchQuery,
+    searchOpen,
+    setSearchQuery,
+    searchInputRef,
+    handleSearchSubmit,
+  } = useSearch({
+    disabled: () => keybindingsModalOpen() || stateModalOpen(),
+    onClose: () => {
+      setFocusedIssueIndex(0);
+    },
+    onQueryChange: () => {
+      setFocusedIssueIndex(0);
+    },
+  });
 
-    return data?.[idx];
+  const filteredIssues = useFilter(
+    () => issues()?.data,
+    (issue: Issue, query: string) => {
+      const summary = (issue.summary || "").toLowerCase();
+      const idReadable = (issue.idReadable || "").toLowerCase();
+      return summary.includes(query) || idReadable.includes(query);
+    },
+    searchQuery
+  );
+
+  const selectedIssue = createMemo(() => {
+    const filtered = filteredIssues();
+    const idx = focusedIssueIndex();
+    return filtered?.[idx];
+  });
+
+  const issueState = createMemo(() => {
+    const issue = selectedIssue();
+    if (!issue) return null;
+    
+    if (issue.state?.name) {
+      return issue.state.name;
+    }
+    
+    const stateField = issue.customFields?.find(
+      cf => cf.name === "State" || cf.name === "Status"
+    );
+    
+    if (stateField?.value) {
+      const value = Array.isArray(stateField.value) 
+        ? stateField.value[0] 
+        : stateField.value;
+      if (value && (value.name || value.presentation)) {
+        return value.name || value.presentation;
+      }
+    }
+    
+    return null;
   });
 
   useKeyboard((evt) => {
@@ -47,16 +103,28 @@ export function App() {
       process.exit(0);
     }
 
+    if (searchOpen()) return
+
     if ((evt.shift && evt.name === "/") || evt.name === "?") {
       setKeybindingsModalOpen(!keybindingsModalOpen());
       return;
     }
 
-    if (evt.name === "escape" && keybindingsModalOpen()) {
-      setKeybindingsModalOpen(false);
-      return;
+    if (evt.name === "escape") {
+      if (keybindingsModalOpen()) {
+        setKeybindingsModalOpen(false);
+        return;
+      }
+      if (stateModalOpen()) {
+        setStateModalOpen(false);
+        return;
+      }
     }
 
+    if (evt.name === "s" && !keybindingsModalOpen() && !stateModalOpen() && selectedIssue()) {
+      setStateModalOpen(true);
+      return;
+    }
 
     if (evt.name === "`") {
       renderer.console.toggle();
@@ -70,11 +138,12 @@ export function App() {
         <IssuesList 
           issues={issues}
           onFocusedIndexChange={setFocusedIssueIndex}
-          modalOpen={keybindingsModalOpen()}
+          modalOpen={keybindingsModalOpen() || stateModalOpen()}
           onUrlCopied={() => {
             setUrlCopiedMessage(true);
             setTimeout(() => setUrlCopiedMessage(false), 1500);
           }}
+          searchQuery={searchQuery}
         />
         <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="65%" title={`Selected Issue: ${selectedIssue()?.summary}`}>
           <Show when={selectedIssue()}>
@@ -85,11 +154,76 @@ export function App() {
           <Show when={selectedIssue()}>
             <text>Reporter:</text>
             <text>@{selectedIssue()?.reporter?.login}</text>
+            <text></text>
+            <Show when={issueState()}>
+              <text>State: </text>
+              <text>{issueState()}</text>
+            </Show>
           </Show>
         </box>
       </box>
-      <KeybindingsToolbar urlCopied={urlCopiedMessage()} />
+      <KeybindingsToolbar 
+        urlCopied={urlCopiedMessage()} 
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        searchOpen={searchOpen}
+        onSearchSubmit={() => {
+          handleSearchSubmit();
+          setFocusedIssueIndex(0);
+        }}
+        searchInputRef={searchInputRef}
+      />
       <KeybindingsModal open={keybindingsModalOpen()} onClose={() => setKeybindingsModalOpen(false)} />
+      <StateModal 
+        open={stateModalOpen()} 
+        onClose={() => setStateModalOpen(false)}
+        issue={selectedIssue()}
+        youtrack={youtrack}
+        onStateChanged={(newState: BundleValue) => {
+          const currentIssues = issues();
+          const issueToUpdate = selectedIssue();
+          
+          if (!currentIssues?.data || !issueToUpdate) return;
+          
+          const updatedIssues = currentIssues.data.map(issue => {
+            if (issue.id === issueToUpdate.id) {
+              const updatedIssue = { ...issue };
+              
+              if (updatedIssue.state) {
+                updatedIssue.state = {
+                  ...updatedIssue.state,
+                  id: newState.id,
+                  name: newState.name,
+                  resolved: newState.isResolved
+                };
+              }
+              
+              if (updatedIssue.customFields) {
+                updatedIssue.customFields = updatedIssue.customFields.map(cf => {
+                  if (cf.name === "State" || cf.name === "Status") {
+                    const oldValue = Array.isArray(cf.value) ? cf.value[0] : cf.value;
+                    return {
+                      ...cf,
+                      value: {
+                        ...(oldValue || {}),
+                        id: newState.id,
+                        name: newState.name,
+                        presentation: newState.name
+                      }
+                    };
+                  }
+                  return cf;
+                });
+              }
+              
+              return updatedIssue;
+            }
+            return issue;
+          });
+
+          mutateIssues({ ...currentIssues, data: updatedIssues });
+        }}
+      />
     </box>
   );
 }

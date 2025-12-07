@@ -136,6 +136,7 @@ export interface Bundle extends BaseEntity {
 export interface BundleValue extends BaseEntity {
   name?: string;
   ordinal?: number;
+  isResolved?: boolean;
 }
 
 export interface ProjectCustomField extends BaseEntity {
