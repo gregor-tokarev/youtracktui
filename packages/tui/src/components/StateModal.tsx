@@ -1,7 +1,7 @@
 import { For, Show, createSignal, createMemo, createEffect, createResource } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import type { ScrollBoxRenderable } from "@opentui/core";
-import type { Issue } from "@youtracktui/sdk";
+import type { Issue, BundleValue } from "@youtracktui/sdk";
 import type { YouTrackSDK } from "@youtracktui/sdk";
 import { colors } from "../styles/colors";
 
@@ -10,7 +10,7 @@ interface StateModalProps {
   onClose: () => void;
   issue: Issue | undefined;
   youtrack: YouTrackSDK;
-  onStateChanged: () => void;
+  onStateChanged: (newState: BundleValue) => void;
 }
 
 export function StateModal(props: StateModalProps) {
@@ -106,12 +106,12 @@ export function StateModal(props: StateModalProps) {
     return stateField?.id || null;
   });
 
-  const changeState = async (stateId: string) => {
+  const changeState = async (state: BundleValue) => {
     const issue = props.issue;
-    if (!issue?.id) return;
+    if (!issue?.id || !state.id) return;
 
     const fieldIdentifier = stateFieldId() || "State";
-    const updateValue = { value: { id: stateId } };
+    const updateValue = { value: { id: state.id } };
 
     try {
       await props.youtrack.issues.updateCustomField(
@@ -119,7 +119,7 @@ export function StateModal(props: StateModalProps) {
         fieldIdentifier,
         updateValue
       );
-      props.onStateChanged();
+      props.onStateChanged(state);
       props.onClose();
     } catch (error) {
       console.error("Failed to update issue state:", error);
@@ -152,7 +152,7 @@ export function StateModal(props: StateModalProps) {
     if (evt.name === "enter" || evt.name === "return") {
       const selectedState = statesList[focusedIndex()];
       if (selectedState?.id) {
-        changeState(selectedState.id);
+        changeState(selectedState);
       }
       return;
     }

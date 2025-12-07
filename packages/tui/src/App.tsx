@@ -1,10 +1,13 @@
-import { YouTrackSDK } from "@youtracktui/sdk";
+import { YouTrackSDK, type BundleValue } from "@youtracktui/sdk";
 import { createResource, createSignal, Show, createMemo } from "solid-js";
 import { useKeyboard, useRenderer } from "@opentui/solid";
 import { IssuesList } from "./components/IssuesList";
 import { KeybindingsToolbar } from "./components/Toolbar";
 import { KeybindingsModal } from "./components/KeybindingsModal";
 import { StateModal } from "./components/StateModal";
+import { useSearch } from "./hooks/useSearch";
+import { useFilter } from "./hooks/useFilter";
+import type { Issue } from "@youtracktui/sdk";
 
 export function App() {
   const renderer = useRenderer();
@@ -14,10 +17,10 @@ export function App() {
     token: Bun.env.YOUTRACK_PERM_TOKEN || "",
   });
 
-  const [issuesRefreshTrigger, setIssuesRefreshTrigger] = createSignal(0);
+  const [issuesRefreshTrigger] = createSignal(0);
 
-  const [issues] = createResource(issuesRefreshTrigger, async () => {
-    return youtrack.issues.search("assignee: me #Unresolved Type: Task", {
+  const [issues, { mutate: mutateIssues }] = createResource(issuesRefreshTrigger, async () => {
+    return youtrack.issues.search("assignee: me #Unresolved Type: Task sort by: created desc", {
       fields: [
         "id",
         "summary",
@@ -26,7 +29,6 @@ export function App() {
         "description",
         "reporter(login)",
         "state(id,name,resolved)",
-        "tags(name)",
         "customFields(id,name,value(presentation,id,name,$type))",
         "created",
         "updated",
@@ -39,10 +41,36 @@ export function App() {
   const [stateModalOpen, setStateModalOpen] = createSignal(false);
   const [urlCopiedMessage, setUrlCopiedMessage] = createSignal(false);
 
+  const {
+    searchQuery,
+    searchOpen,
+    setSearchQuery,
+    searchInputRef,
+    handleSearchSubmit,
+  } = useSearch({
+    disabled: () => keybindingsModalOpen() || stateModalOpen(),
+    onClose: () => {
+      setFocusedIssueIndex(0);
+    },
+    onQueryChange: () => {
+      setFocusedIssueIndex(0);
+    },
+  });
+
+  const filteredIssues = useFilter(
+    () => issues()?.data,
+    (issue: Issue, query: string) => {
+      const summary = (issue.summary || "").toLowerCase();
+      const idReadable = (issue.idReadable || "").toLowerCase();
+      return summary.includes(query) || idReadable.includes(query);
+    },
+    searchQuery
+  );
+
   const selectedIssue = createMemo(() => {
-    const data = issues()?.data;
+    const filtered = filteredIssues();
     const idx = focusedIssueIndex();
-    return data?.[idx];
+    return filtered?.[idx];
   });
 
   const issueState = createMemo(() => {
@@ -74,6 +102,8 @@ export function App() {
       renderer.destroy();
       process.exit(0);
     }
+
+    if (searchOpen()) return
 
     if ((evt.shift && evt.name === "/") || evt.name === "?") {
       setKeybindingsModalOpen(!keybindingsModalOpen());
@@ -113,6 +143,7 @@ export function App() {
             setUrlCopiedMessage(true);
             setTimeout(() => setUrlCopiedMessage(false), 1500);
           }}
+          searchQuery={searchQuery}
         />
         <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="65%" title={`Selected Issue: ${selectedIssue()?.summary}`}>
           <Show when={selectedIssue()}>
@@ -131,15 +162,66 @@ export function App() {
           </Show>
         </box>
       </box>
-      <KeybindingsToolbar urlCopied={urlCopiedMessage()} />
+      <KeybindingsToolbar 
+        urlCopied={urlCopiedMessage()} 
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        searchOpen={searchOpen}
+        onSearchSubmit={() => {
+          handleSearchSubmit();
+          setFocusedIssueIndex(0);
+        }}
+        searchInputRef={searchInputRef}
+      />
       <KeybindingsModal open={keybindingsModalOpen()} onClose={() => setKeybindingsModalOpen(false)} />
       <StateModal 
         open={stateModalOpen()} 
         onClose={() => setStateModalOpen(false)}
         issue={selectedIssue()}
         youtrack={youtrack}
-        onStateChanged={() => {
-          setIssuesRefreshTrigger((prev) => prev + 1);
+        onStateChanged={(newState: BundleValue) => {
+          const currentIssues = issues();
+          const issueToUpdate = selectedIssue();
+          
+          if (!currentIssues?.data || !issueToUpdate) return;
+          
+          const updatedIssues = currentIssues.data.map(issue => {
+            if (issue.id === issueToUpdate.id) {
+              const updatedIssue = { ...issue };
+              
+              if (updatedIssue.state) {
+                updatedIssue.state = {
+                  ...updatedIssue.state,
+                  id: newState.id,
+                  name: newState.name,
+                  resolved: newState.isResolved
+                };
+              }
+              
+              if (updatedIssue.customFields) {
+                updatedIssue.customFields = updatedIssue.customFields.map(cf => {
+                  if (cf.name === "State" || cf.name === "Status") {
+                    const oldValue = Array.isArray(cf.value) ? cf.value[0] : cf.value;
+                    return {
+                      ...cf,
+                      value: {
+                        ...(oldValue || {}),
+                        id: newState.id,
+                        name: newState.name,
+                        presentation: newState.name
+                      }
+                    };
+                  }
+                  return cf;
+                });
+              }
+              
+              return updatedIssue;
+            }
+            return issue;
+          });
+
+          mutateIssues({ ...currentIssues, data: updatedIssues });
         }}
       />
     </box>

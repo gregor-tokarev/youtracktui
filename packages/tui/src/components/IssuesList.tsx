@@ -1,22 +1,22 @@
-import { createSignal, For, Show, onCleanup, createMemo, type Resource } from "solid-js";
+import { createSignal, For, Show, onCleanup, createMemo, createEffect, type Resource, type Accessor } from "solid-js";
 import { useKeyboard  } from "@opentui/solid";
-import type { ScrollBoxRenderable, InputRenderable } from "@opentui/core";
+import type { ScrollBoxRenderable } from "@opentui/core";
 import type { Issue, PaginatedResponse } from "@youtracktui/sdk";
 import { copyToClipboard } from "../utils/clipboard";
 import { truncateText } from "../utils/text";
+import { useFilter } from "../hooks/useFilter";
 
 interface IssuesListProps {
   issues: Resource<PaginatedResponse<Issue>>;
   onFocusedIndexChange?: (index: number) => void;
   modalOpen?: boolean;
   onUrlCopied?: () => void;
+  searchQuery: Accessor<string>;
 }
 
 export function IssuesList(props: IssuesListProps) {
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
-  const [searchQuery, setSearchQuery] = createSignal("");
   let scrollboxRef: ScrollBoxRenderable | undefined;
-  let searchInputRef: InputRenderable | undefined;
 
   const setScrollboxRef = (ref: ScrollBoxRenderable | undefined) => {
     scrollboxRef = ref;
@@ -31,22 +31,20 @@ export function IssuesList(props: IssuesListProps) {
   
   onCleanup(() => clearInterval(spinnerInterval));
 
-  const [searchOpen, setSearchOpen] = createSignal(false);
-
-  const filteredIssues = createMemo(() => {
-    const issues = props.issues()?.data || [];
-    const query = searchQuery().toLowerCase().trim();
-    
-    if (!query) {
-      return issues;
-    }
-    
-    return issues.filter((issue: Issue) => {
+  const filteredIssues = useFilter(
+    () => props.issues()?.data,
+    (issue: Issue, query: string) => {
       const summary = (issue.summary || "").toLowerCase();
       const idReadable = (issue.idReadable || "").toLowerCase();
-      
       return summary.includes(query) || idReadable.includes(query);
-    });
+    },
+    props.searchQuery
+  );
+
+  createEffect(() => {
+    props.searchQuery();
+    setFocusedIssueIndex(0);
+    props.onFocusedIndexChange?.(0);
   });
 
   const title = createMemo(() => {
@@ -55,7 +53,7 @@ export function IssuesList(props: IssuesListProps) {
     }
     
     const totalIssues = props.issues()?.data?.length || 0;
-    const hasSearch = searchQuery().trim() !== "";
+    const hasSearch = props.searchQuery().trim() !== "";
     
     if (hasSearch) {
       return `[1] Issues (${filteredIssues().length}/${totalIssues})`;
@@ -64,39 +62,8 @@ export function IssuesList(props: IssuesListProps) {
     return `[1] Issues (${totalIssues})`;
   });
 
-  const handleSearchSubmit = () => {
-    setSearchOpen(false);
-    setFocusedIssueIndex(0);
-    
-    if (searchInputRef) {
-      searchInputRef.blur();
-    }
-  };
-
   useKeyboard((evt) => {
     if (props.modalOpen) return;
-
-    if (evt.name === "/") {
-      setSearchOpen(!searchOpen());
-
-      if (searchInputRef) {
-        setTimeout(() => {
-          searchInputRef.focus();
-        }, 0);
-      }
-    }
-
-    if (evt.name === "escape") {
-      if (searchOpen()) {
-        setSearchOpen(false);
-        setSearchQuery("");
-        setFocusedIssueIndex(0);
-
-        if (searchInputRef) searchInputRef.blur();
-      }
-    }
-
-    if (searchOpen()) return;
 
     if (evt.name === "j") {
       const totalItems = filteredIssues().length;
@@ -154,8 +121,6 @@ export function IssuesList(props: IssuesListProps) {
     }
 
     if (evt.name === "y") {
-      if (searchOpen()) return;
-      
       const issues = filteredIssues();
       if (issues.length > 0 && focusedIssueIndex() < issues.length) {
         const issue = issues[focusedIssueIndex()];
@@ -170,27 +135,13 @@ export function IssuesList(props: IssuesListProps) {
 
   return ( 
   <box flexDirection="column" width="20%">
-    <Show when={searchOpen()}>
-      <box height={3} borderStyle="single" borderColor="gray">
-        <input 
-          ref={searchInputRef} 
-          placeholder="Search issues" 
-          focusedTextColor="gray" 
-          backgroundColor="transparent" 
-          focusedBackgroundColor="transparent"
-          value={searchQuery()}
-          onInput={setSearchQuery}
-          onSubmit={handleSearchSubmit}
-        />
-      </box>
-    </Show>
     <scrollbox 
       ref={setScrollboxRef}
       borderStyle="single" 
       borderColor="gray" 
       flexGrow={1}
       padding={1} 
-      height={searchOpen() ? "80%" : "100%"} 
+      height="100%" 
       title={title()}
     >
       <Show when={props.issues()?.data}>
