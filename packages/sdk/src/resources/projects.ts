@@ -1,5 +1,5 @@
 import { YouTrackClient } from '../client';
-import type { Project, ProjectCustomField } from '../types';
+import type { Project, ProjectCustomField, BundleValue } from '../types';
 
 export class ProjectsResource {
   constructor(private client: YouTrackClient) {}
@@ -32,6 +32,37 @@ export class ProjectsResource {
       `/admin/projects/${id}/customFields`,
       params
     );
+  }
+
+  async getStateBundle(projectId: string): Promise<BundleValue[]> {
+    try {
+      const customFields = await this.getCustomFields(projectId, [
+        "name",
+        "customField(name)",
+        "bundle(id)",
+        "$type"
+      ]);
+      
+      const stateField = customFields.find(f => 
+        f.$type === "StateProjectCustomField" || f.name === "State" || f.customField?.name === "State"
+      );
+      
+      if (!stateField?.bundle?.id) {
+        return [];
+      }
+      
+      const bundleId = stateField.bundle.id;
+      const params: Record<string, string> = {
+        fields: "id,name,isResolved"
+      };
+      const values = await this.client.get<BundleValue[]>(
+        `/admin/customFieldSettings/bundles/state/${bundleId}/values`,
+        params
+      );
+      return values || [];
+    } catch (error) {
+      return [];
+    }
   }
 }
 

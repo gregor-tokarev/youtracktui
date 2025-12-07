@@ -4,6 +4,7 @@ import { useKeyboard, useRenderer } from "@opentui/solid";
 import { IssuesList } from "./components/IssuesList";
 import { KeybindingsToolbar } from "./components/Toolbar";
 import { KeybindingsModal } from "./components/KeybindingsModal";
+import { StateModal } from "./components/StateModal";
 
 export function App() {
   const renderer = useRenderer();
@@ -13,17 +14,20 @@ export function App() {
     token: Bun.env.YOUTRACK_PERM_TOKEN || "",
   });
 
-  const [issues] = createResource(async () => {
+  const [issuesRefreshTrigger, setIssuesRefreshTrigger] = createSignal(0);
+
+  const [issues] = createResource(issuesRefreshTrigger, async () => {
     return youtrack.issues.search("assignee: me #Unresolved Type: Task", {
       fields: [
+        "id",
         "summary",
         "idReadable",
-        "project(name)",
+        "project(id,name)",
         "description",
         "reporter(login)",
-        "state(name)",
+        "state(id,name,resolved)",
         "tags(name)",
-        "customFields(name,value(presentation,id,name,$type))",
+        "customFields(id,name,value(presentation,id,name,$type))",
         "created",
         "updated",
       ],
@@ -32,13 +36,37 @@ export function App() {
 
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
   const [keybindingsModalOpen, setKeybindingsModalOpen] = createSignal(false);
+  const [stateModalOpen, setStateModalOpen] = createSignal(false);
   const [urlCopiedMessage, setUrlCopiedMessage] = createSignal(false);
 
   const selectedIssue = createMemo(() => {
     const data = issues()?.data;
     const idx = focusedIssueIndex();
-
     return data?.[idx];
+  });
+
+  const issueState = createMemo(() => {
+    const issue = selectedIssue();
+    if (!issue) return null;
+    
+    if (issue.state?.name) {
+      return issue.state.name;
+    }
+    
+    const stateField = issue.customFields?.find(
+      cf => cf.name === "State" || cf.name === "Status"
+    );
+    
+    if (stateField?.value) {
+      const value = Array.isArray(stateField.value) 
+        ? stateField.value[0] 
+        : stateField.value;
+      if (value && (value.name || value.presentation)) {
+        return value.name || value.presentation;
+      }
+    }
+    
+    return null;
   });
 
   useKeyboard((evt) => {
@@ -52,11 +80,21 @@ export function App() {
       return;
     }
 
-    if (evt.name === "escape" && keybindingsModalOpen()) {
-      setKeybindingsModalOpen(false);
-      return;
+    if (evt.name === "escape") {
+      if (keybindingsModalOpen()) {
+        setKeybindingsModalOpen(false);
+        return;
+      }
+      if (stateModalOpen()) {
+        setStateModalOpen(false);
+        return;
+      }
     }
 
+    if (evt.name === "s" && !keybindingsModalOpen() && !stateModalOpen() && selectedIssue()) {
+      setStateModalOpen(true);
+      return;
+    }
 
     if (evt.name === "`") {
       renderer.console.toggle();
@@ -70,7 +108,7 @@ export function App() {
         <IssuesList 
           issues={issues}
           onFocusedIndexChange={setFocusedIssueIndex}
-          modalOpen={keybindingsModalOpen()}
+          modalOpen={keybindingsModalOpen() || stateModalOpen()}
           onUrlCopied={() => {
             setUrlCopiedMessage(true);
             setTimeout(() => setUrlCopiedMessage(false), 1500);
@@ -85,11 +123,25 @@ export function App() {
           <Show when={selectedIssue()}>
             <text>Reporter:</text>
             <text>@{selectedIssue()?.reporter?.login}</text>
+            <text></text>
+            <Show when={issueState()}>
+              <text>State: </text>
+              <text>{issueState()}</text>
+            </Show>
           </Show>
         </box>
       </box>
       <KeybindingsToolbar urlCopied={urlCopiedMessage()} />
       <KeybindingsModal open={keybindingsModalOpen()} onClose={() => setKeybindingsModalOpen(false)} />
+      <StateModal 
+        open={stateModalOpen()} 
+        onClose={() => setStateModalOpen(false)}
+        issue={selectedIssue()}
+        youtrack={youtrack}
+        onStateChanged={() => {
+          setIssuesRefreshTrigger((prev) => prev + 1);
+        }}
+      />
     </box>
   );
 }
