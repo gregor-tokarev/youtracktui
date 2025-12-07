@@ -1,13 +1,8 @@
 import { createSignal, For, Show, onCleanup, createMemo, type Resource } from "solid-js";
 import { useKeyboard  } from "@opentui/solid";
 import type { ScrollBoxRenderable, InputRenderable } from "@opentui/core";
-
-function truncateText(text: string, maxWidth: number): string {
-  if (text.length <= maxWidth) {
-    return text;
-  }
-  return text.slice(0, maxWidth);
-}
+import { copyToClipboard } from "../utils/clipboard";
+import { truncateText } from "../utils/text";
 
 interface IssuesListProps {
   issues: Resource<any>;
@@ -95,6 +90,14 @@ export function IssuesList(props: IssuesListProps) {
       }
     }
 
+    if (evt.ctrl && evt.name === "y") {
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const url = `${Bun.env.YOUTRACK_BASE_URL}/issue/${issues[focusedIssueIndex()].idReadable}`;
+        copyToClipboard(url);
+      }
+    }
+
     if (evt.name === "o") {
       const issues = filteredIssues();
       if (issues.length > 0 && focusedIssueIndex() < issues.length) {
@@ -102,6 +105,19 @@ export function IssuesList(props: IssuesListProps) {
         Bun.spawn(["open", url]);
       }
     }
+
+    if (evt.name === "y") {
+      if (searchOpen()) return;
+      
+      const issues = filteredIssues();
+      if (issues.length > 0 && focusedIssueIndex() < issues.length) {
+        const issue = issues[focusedIssueIndex()];
+        const slackLink = `${issue.idReadable}_`;
+
+        copyToClipboard(slackLink);
+      }
+    }
+
 
     if (evt.name === "/") {
       setSearchOpen(!searchOpen());
