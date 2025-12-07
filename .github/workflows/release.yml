@@ -1,0 +1,135 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: bun run scripts/build-all.ts
+      
+      - name: Package Debian
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: bun run scripts/package-deb.ts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.deb
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            dist/*.tar.gz
+            dist/*.deb
+          retention-days: 30
+
+  homebrew:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+      
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          SHA256=$(sha256sum dist/yt-macos-arm64-v${{ steps.version.outputs.VERSION }}.tar.gz | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+      
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.HOMEBREW_TAP_REPO }}
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+      
+      - name: Calculate SHA256 for x64
+        id: sha256_x64
+        run: |
+          SHA256=$(sha256sum dist/yt-macos-x64-v${{ steps.version.outputs.VERSION }}.tar.gz | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+      
+      - name: Update Homebrew formula
+        run: |
+          cd homebrew-tap
+          FORMULA_FILE="yt.rb"
+          
+          cat > "$FORMULA_FILE" << EOF
+          class Yt < Formula
+            desc "Terminal UI for YouTrack"
+            homepage "https://github.com/gregortokarev/youtracktui"
+            version "${{ steps.version.outputs.VERSION }}"
+          
+            if Hardware::CPU.arm?
+              url "https://github.com/gregortokarev/youtracktui/releases/download/v${{ steps.version.outputs.VERSION }}/yt-macos-arm64-v${{ steps.version.outputs.VERSION }}.tar.gz"
+              sha256 "${{ steps.sha256.outputs.SHA256 }}"
+            else
+              url "https://github.com/gregortokarev/youtracktui/releases/download/v${{ steps.version.outputs.VERSION }}/yt-macos-x64-v${{ steps.version.outputs.VERSION }}.tar.gz"
+              sha256 "${{ steps.sha256_x64.outputs.SHA256 }}"
+            end
+          
+            def install
+              bin.install "yt"
+            end
+          
+            test do
+              system "#{bin}/yt", "--version"
+            end
+          end
+          EOF
+      
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add yt.rb
+          git commit -m "Update yt to ${{ steps.version.outputs.VERSION }}" || exit 0
+          git push
