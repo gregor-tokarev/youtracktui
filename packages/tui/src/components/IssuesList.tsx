@@ -22,7 +22,6 @@ export function IssuesList(props: IssuesListProps) {
     scrollboxRef = ref;
   };
 
-  // Animated spinner
   const spinnerFrames = ["/", "|", "\\", "—"];
   const [spinnerIndex, setSpinnerIndex] = createSignal(0);
   
@@ -32,7 +31,6 @@ export function IssuesList(props: IssuesListProps) {
   
   onCleanup(() => clearInterval(spinnerInterval));
 
-  // Keyboard navigation logic
   useKeyboard((evt) => {
     if (evt.name === "j") {
       const totalItems = props.issues()?.data?.length || 0;

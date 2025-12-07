@@ -1,26 +1,7 @@
-/**
- * YouTrack TypeScript SDK
- * 
- * A robust TypeScript SDK for interacting with the YouTrack REST API.
- * 
- * @example
- * ```typescript
- * import { YouTrackSDK } from '@youtracktui/sdk';
- * 
- * const youtrack = new YouTrackSDK({
- *   baseUrl: 'https://your-youtrack-instance.com',
- *   token: 'your-api-token',
- * });
- * 
- * const issues = await youtrack.issues.search('assignee: me');
- * ```
- */
-
 export { YouTrackSDK } from './src/sdk';
 export { YouTrackClient } from './src/client';
 export { YouTrackError } from './src/client';
 
-// Export all types
 export type {
   BaseEntity,
   User,
@@ -54,7 +35,6 @@ export type {
   RequestOptions,
 } from './src/types';
 
-// Export resource classes for advanced usage
 export { IssuesResource } from './src/resources/issues';
 export { ProjectsResource } from './src/resources/projects';
 export { UsersResource } from './src/resources/users';

@@ -7,15 +7,9 @@ import type {
   SearchOptions,
 } from '../types';
 
-/**
- * Agile resource
- */
 export class AgileResource {
   constructor(private client: YouTrackClient) {}
 
-  /**
-   * List all agile boards
-   */
   async listBoards(fields?: string | string[]): Promise<AgileBoard[]> {
     const params: Record<string, string> = {};
     if (fields) {
@@ -24,9 +18,6 @@ export class AgileResource {
     return this.client.get<AgileBoard[]>('/agiles', params);
   }
 
-  /**
-   * Get an agile board by ID
-   */
   async getBoard(id: string, fields?: string | string[]): Promise<AgileBoard> {
     const params: Record<string, string> = {};
     if (fields) {
@@ -35,9 +26,6 @@ export class AgileResource {
     return this.client.get<AgileBoard>(`/agiles/${id}`, params);
   }
 
-  /**
-   * Get current sprint for an agile board
-   */
   async getCurrentSprint(
     boardId: string,
     fields?: string | string[]
@@ -52,7 +40,6 @@ export class AgileResource {
         params
       );
     } catch (error: any) {
-      // Return null if no current sprint exists
       if (error?.status === 404) {
         return null;
       }
@@ -60,9 +47,6 @@ export class AgileResource {
     }
   }
 
-  /**
-   * Get a sprint by ID
-   */
   async getSprint(
     boardId: string,
     sprintId: string,
@@ -78,9 +62,6 @@ export class AgileResource {
     );
   }
 
-  /**
-   * Get issues in a sprint
-   */
   async getIssues(
     boardId: string,
     sprintId: string,

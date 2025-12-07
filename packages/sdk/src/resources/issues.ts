@@ -22,15 +22,9 @@ const DEFAULT_ISSUE_FIELDS = [
   'updated',
 ];
 
-/**
- * Issues resource
- */
 export class IssuesResource {
   constructor(private client: YouTrackClient) {}
 
-  /**
-   * Get a single issue by ID
-   */
   async get(id: string, fields?: string | string[]): Promise<Issue> {
     const params: Record<string, string> = {};
     const fieldList = fields ?? DEFAULT_ISSUE_FIELDS;
@@ -38,9 +32,6 @@ export class IssuesResource {
     return this.client.get<Issue>(`/issues/${id}`, params);
   }
 
-  /**
-   * Search for issues
-   */
   async search(
     query: string,
     options?: SearchOptions
@@ -70,18 +61,14 @@ export class IssuesResource {
       params.query = options.query;
     }
 
-    // YouTrack API returns an array directly, not a PaginatedResponse
-    // We need to transform it and extract pagination info from headers
     const { data, response } = await this.client.getWithResponse<Issue[]>(
       '/issues',
       params
     );
 
-    // Extract pagination info from headers if available
     const totalHeader = response.headers.get('X-Total-Count') || response.headers.get('x-total-count');
     const total = totalHeader ? parseInt(totalHeader, 10) : undefined;
 
-    // Ensure data is an array
     const issues = Array.isArray(data) ? data : [];
 
     return {
@@ -92,30 +79,18 @@ export class IssuesResource {
     };
   }
 
-  /**
-   * Create a new issue
-   */
   async create(draft: Partial<Issue>): Promise<Issue> {
     return this.client.post<Issue>('/issues', draft);
   }
 
-  /**
-   * Update an issue
-   */
   async update(id: string, updates: Partial<Issue>): Promise<Issue> {
     return this.client.post<Issue>(`/issues/${id}`, updates);
   }
 
-  /**
-   * Add a comment to an issue
-   */
   async addComment(id: string, comment: { text: string }): Promise<Comment> {
     return this.client.post<Comment>(`/issues/${id}/comments`, comment);
   }
 
-  /**
-   * Get activities for an issue
-   */
   async getActivities(
     id: string,
     categories?: string,
@@ -131,9 +106,6 @@ export class IssuesResource {
     return this.client.get<ActivityItem[]>(`/issues/${id}/activities`, params);
   }
 
-  /**
-   * Update a custom field on an issue
-   */
   async updateCustomField(
     id: string,
     fieldName: string,

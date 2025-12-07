@@ -5,10 +5,6 @@ import { UsersResource } from './resources/users';
 import { AgileResource } from './resources/agile';
 import type { YouTrackConfig } from './types';
 
-/**
- * YouTrack SDK
- * Main entry point for interacting with the YouTrack API
- */
 export class YouTrackSDK extends YouTrackClient {
   public readonly issues: IssuesResource;
   public readonly projects: ProjectsResource;

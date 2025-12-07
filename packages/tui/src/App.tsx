@@ -57,13 +57,7 @@ export function App() {
       />
       <scrollbox borderStyle="single" borderColor="gray" padding={1} height="100%" width="65%" title={`Selected Issue: ${selectedIssue()?.summary}`}>
         <Show when={selectedIssue()}>
-          {/* <text>{selectedIssue()?.summary}</text> */}
           <text>{selectedIssue()?.description}</text>
-          {/* <text>{selectedIssue()?.project?.name}</text> */}
-          {/* <text>{selectedIssue()?.tags?.map((tag) => tag.name).join(", ")}</text> */}
-          {/* <text>{selectedIssue()?.customFields?.map((field) => field.name).join(", ")}</text> */}
-          {/* <text>{selectedIssue()?.created}</text> */}
-          {/* <text>{selectedIssue()?.updated}</text> */}
         </Show>
       </scrollbox>
       <box width="15%" borderStyle="single" borderColor="gray" padding={1}>
