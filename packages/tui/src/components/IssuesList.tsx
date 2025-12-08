@@ -56,10 +56,10 @@ export function IssuesList(props: IssuesListProps) {
     const hasSearch = props.searchQuery().trim() !== "";
     
     if (hasSearch) {
-      return `[1] Issues (${filteredIssues().length}/${totalIssues})`;
+      return `[1] My Issues (${filteredIssues().length}/${totalIssues})`;
     }
     
-    return `[1] Issues (${totalIssues})`;
+    return `[1] My Issues (${totalIssues})`;
   });
 
   useKeyboard((evt) => {
