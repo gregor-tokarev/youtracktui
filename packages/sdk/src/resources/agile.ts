@@ -1,96 +1,95 @@
-import { YouTrackClient } from '../client';
+import { YouTrackClient } from "../client";
 import type {
-  AgileBoard,
-  Sprint,
-  PaginatedResponse,
-  Issue,
-  SearchOptions,
-} from '../types';
+	AgileBoard,
+	Sprint,
+	PaginatedResponse,
+	Issue,
+	SearchOptions,
+} from "../types";
 
 export class AgileResource {
-  constructor(private client: YouTrackClient) {}
+	constructor(private client: YouTrackClient) {}
 
-  async listBoards(fields?: string | string[]): Promise<AgileBoard[]> {
-    const params: Record<string, string> = {};
-    if (fields) {
-      params.fields = Array.isArray(fields) ? fields.join(',') : fields;
-    }
-    return this.client.get<AgileBoard[]>('/agiles', params);
-  }
+	async listBoards(fields?: string | string[]): Promise<AgileBoard[]> {
+		const params: Record<string, string> = {};
+		if (fields) {
+			params.fields = Array.isArray(fields) ? fields.join(",") : fields;
+		}
+		return this.client.get<AgileBoard[]>("/agiles", params);
+	}
 
-  async getBoard(id: string, fields?: string | string[]): Promise<AgileBoard> {
-    const params: Record<string, string> = {};
-    if (fields) {
-      params.fields = Array.isArray(fields) ? fields.join(',') : fields;
-    }
-    return this.client.get<AgileBoard>(`/agiles/${id}`, params);
-  }
+	async getBoard(id: string, fields?: string | string[]): Promise<AgileBoard> {
+		const params: Record<string, string> = {};
+		if (fields) {
+			params.fields = Array.isArray(fields) ? fields.join(",") : fields;
+		}
+		return this.client.get<AgileBoard>(`/agiles/${id}`, params);
+	}
 
-  async getCurrentSprint(
-    boardId: string,
-    fields?: string | string[]
-  ): Promise<Sprint | null> {
-    const params: Record<string, string> = {};
-    if (fields) {
-      params.fields = Array.isArray(fields) ? fields.join(',') : fields;
-    }
-    try {
-      return await this.client.get<Sprint>(
-        `/agiles/${boardId}/sprints/current`,
-        params
-      );
-    } catch (error: any) {
-      if (error?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  }
+	async getCurrentSprint(
+		boardId: string,
+		fields?: string | string[],
+	): Promise<Sprint | null> {
+		const params: Record<string, string> = {};
+		if (fields) {
+			params.fields = Array.isArray(fields) ? fields.join(",") : fields;
+		}
+		try {
+			return await this.client.get<Sprint>(
+				`/agiles/${boardId}/sprints/current`,
+				params,
+			);
+		} catch (error: any) {
+			if (error?.status === 404) {
+				return null;
+			}
+			throw error;
+		}
+	}
 
-  async getSprint(
-    boardId: string,
-    sprintId: string,
-    fields?: string | string[]
-  ): Promise<Sprint> {
-    const params: Record<string, string> = {};
-    if (fields) {
-      params.fields = Array.isArray(fields) ? fields.join(',') : fields;
-    }
-    return this.client.get<Sprint>(
-      `/agiles/${boardId}/sprints/${sprintId}`,
-      params
-    );
-  }
+	async getSprint(
+		boardId: string,
+		sprintId: string,
+		fields?: string | string[],
+	): Promise<Sprint> {
+		const params: Record<string, string> = {};
+		if (fields) {
+			params.fields = Array.isArray(fields) ? fields.join(",") : fields;
+		}
+		return this.client.get<Sprint>(
+			`/agiles/${boardId}/sprints/${sprintId}`,
+			params,
+		);
+	}
 
-  async getIssues(
-    boardId: string,
-    sprintId: string,
-    options?: SearchOptions
-  ): Promise<PaginatedResponse<Issue>> {
-    const params: Record<string, string> = {};
+	async getIssues(
+		boardId: string,
+		sprintId: string,
+		options?: SearchOptions,
+	): Promise<PaginatedResponse<Issue>> {
+		const params: Record<string, string> = {};
 
-    if (options?.fields) {
-      params.fields = Array.isArray(options.fields)
-        ? options.fields.join(',')
-        : options.fields;
-    }
+		if (options?.fields) {
+			params.fields = Array.isArray(options.fields)
+				? options.fields.join(",")
+				: options.fields;
+		}
 
-    if (options?.top !== undefined) {
-      params.$top = String(options.top);
-    }
+		if (options?.top !== undefined) {
+			params.$top = String(options.top);
+		}
 
-    if (options?.skip !== undefined) {
-      params.$skip = String(options.skip);
-    }
+		if (options?.skip !== undefined) {
+			params.$skip = String(options.skip);
+		}
 
-    if (options?.query) {
-      params.query = options.query;
-    }
+		if (options?.query) {
+			params.query = options.query;
+		}
 
-    return this.client.get<PaginatedResponse<Issue>>(
-      `/agiles/${boardId}/sprints/${sprintId}/issues`,
-      params
-    );
-  }
+		return this.client.get<PaginatedResponse<Issue>>(
+			`/agiles/${boardId}/sprints/${sprintId}/issues`,
+			params,
+		);
+	}
 }
-

@@ -1,24 +1,24 @@
 {
-  "name": "youtracktui",
-  "private": true,
-  "workspaces": [
-    "packages/sdk",
-    "packages/tui"
-  ],
-  "scripts": {
-    "dev": "bun run --cwd=packages/tui --env-file=../../.env dev",
-    "build": "cd packages/tui && bun run build",
-    "build:release": "bun run scripts/build-all.ts",
-    "package:deb": "bun run scripts/package-deb.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@opentui/solid": "^0.1.57",
-    "solid-js": "^1.9.10"
-  }
+	"name": "youtracktui",
+	"private": true,
+	"workspaces": [
+		"packages/sdk",
+		"packages/tui"
+	],
+	"scripts": {
+		"dev": "bun run --cwd=packages/tui --env-file=../../.env dev",
+		"build": "cd packages/tui && bun run build",
+		"build:release": "bun run scripts/build-all.ts",
+		"package:deb": "bun run scripts/package-deb.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@opentui/solid": "^0.1.57",
+		"solid-js": "^1.9.10"
+	}
 }

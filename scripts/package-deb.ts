@@ -1,24 +1,24 @@
-import { $ } from "bun"
-import { mkdir, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { $ } from "bun";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
-const version = process.env.VERSION || "0.1.0"
-const distDir = join(process.cwd(), "dist")
-const debDir = join(distDir, "deb")
-const packageName = "yt"
-const debianVersion = version.replace(/^v/, "")
+const version = process.env.VERSION || "0.1.0";
+const distDir = join(process.cwd(), "dist");
+const debDir = join(distDir, "deb");
+const packageName = "yt";
+const debianVersion = version.replace(/^v/, "");
 
-const debianDir = join(debDir, `${packageName}_${debianVersion}`)
-const debianDataDir = join(debianDir, "DEBIAN")
-const debianUsrBinDir = join(debianDir, "usr", "bin")
-const extractDir = join(distDir, "yt-linux-x64")
+const debianDir = join(debDir, `${packageName}_${debianVersion}`);
+const debianDataDir = join(debianDir, "DEBIAN");
+const debianUsrBinDir = join(debianDir, "usr", "bin");
+const extractDir = join(distDir, "yt-linux-x64");
 
-await mkdir(debianDataDir, { recursive: true })
-await mkdir(debianUsrBinDir, { recursive: true })
-await mkdir(extractDir, { recursive: true })
+await mkdir(debianDataDir, { recursive: true });
+await mkdir(debianUsrBinDir, { recursive: true });
+await mkdir(extractDir, { recursive: true });
 
-const tarPath = join(distDir, `yt-linux-x64-v${version}.tar.gz`)
-await $`tar -xzf ${tarPath} -C ${extractDir}`
+const tarPath = join(distDir, `yt-linux-x64-v${version}.tar.gz`);
+await $`tar -xzf ${tarPath} -C ${extractDir}`;
 
 const controlContent = `Package: ${packageName}
 Version: ${debianVersion}
@@ -29,16 +29,16 @@ Maintainer: YouTrack TUI Maintainers <maintainers@youtracktui.dev>
 Description: Terminal UI for YouTrack
  A modern terminal user interface for managing YouTrack issues and projects.
 Homepage: https://github.com/gregortokarev/youtracktui
-`
+`;
 
-await writeFile(join(debianDataDir, "control"), controlContent)
+await writeFile(join(debianDataDir, "control"), controlContent);
 
-const binaryPath = join(extractDir, "yt")
-await $`cp ${binaryPath} ${debianUsrBinDir}/${packageName}`
+const binaryPath = join(extractDir, "yt");
+await $`cp ${binaryPath} ${debianUsrBinDir}/${packageName}`;
 
-const debFile = join(distDir, `${packageName}_${debianVersion}_amd64.deb`)
+const debFile = join(distDir, `${packageName}_${debianVersion}_amd64.deb`);
 
-console.log(`Building Debian package...`)
-await $`dpkg-deb --build ${debianDir} ${debFile}`
+console.log(`Building Debian package...`);
+await $`dpkg-deb --build ${debianDir} ${debFile}`;
 
-console.log(`✓ Created ${debFile}`)
+console.log(`✓ Created ${debFile}`);
