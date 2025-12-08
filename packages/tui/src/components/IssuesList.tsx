@@ -5,6 +5,7 @@ import type { Issue, PaginatedResponse } from "@youtracktui/sdk";
 import { copyToClipboard } from "../utils/clipboard";
 import { truncateText } from "../utils/text";
 import { useFilter } from "../hooks/useFilter";
+import { useSearch } from "../hooks/useSearch";
 
 interface IssuesListProps {
   issues: Resource<PaginatedResponse<Issue>>;
@@ -21,6 +22,8 @@ export function IssuesList(props: IssuesListProps) {
   const setScrollboxRef = (ref: ScrollBoxRenderable | undefined) => {
     scrollboxRef = ref;
   };
+
+  const { searchOpen } = useSearch();
 
   const spinnerFrames = ["/", "|", "\\", "—"];
   const [spinnerIndex, setSpinnerIndex] = createSignal(0);
@@ -63,7 +66,7 @@ export function IssuesList(props: IssuesListProps) {
   });
 
   useKeyboard((evt) => {
-    if (props.modalOpen) return;
+    if (props.modalOpen || searchOpen()) return;
 
     if (evt.name === "j") {
       const totalItems = filteredIssues().length;
