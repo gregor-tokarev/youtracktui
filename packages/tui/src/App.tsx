@@ -8,6 +8,7 @@ import { StateModal } from "./components/StateModal";
 import { useSearch } from "./hooks/useSearch";
 import { useFilter } from "./hooks/useFilter";
 import type { Issue } from "@youtracktui/sdk";
+import { readIssuesCache, writeIssuesCache } from "./utils/issuesCache";
 
 export function App() {
   const renderer = useRenderer();
@@ -20,7 +21,12 @@ export function App() {
   const [issuesRefreshTrigger] = createSignal(0);
 
   const [issues, { mutate: mutateIssues }] = createResource(issuesRefreshTrigger, async () => {
-    return youtrack.issues.search("assignee: me #Unresolved Type: Task sort by: created desc", {
+    const cached = await readIssuesCache();
+    if (cached) {
+      mutateIssues(cached);
+    }
+
+    const fresh = await youtrack.issues.search("assignee: me #Unresolved Type: Task sort by: created desc", {
       fields: [
         "id",
         "summary",
@@ -34,6 +40,9 @@ export function App() {
         "updated",
       ],
     });
+
+    await writeIssuesCache(fresh);
+    return fresh;
   });
 
   const [focusedIssueIndex, setFocusedIssueIndex] = createSignal(0);
