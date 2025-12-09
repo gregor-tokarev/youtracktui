@@ -117,15 +117,17 @@ export function App() {
 		return null;
 	});
 
-	const handleStateChanged = async (newState: BundleValue) => {
+	const handleStateChanged = createMemo(() => async (newState: BundleValue) => {
 		const currentIssues = issues();
 		const issueToUpdate = selectedIssue();
 
 		if (!currentIssues?.data || !issueToUpdate) return;
 
+		let updatedIssue: Issue | undefined;
+
 		const updatedIssues = currentIssues.data.map((issue) => {
 			if (issue.id === issueToUpdate.id) {
-				const updatedIssue = { ...issue };
+				updatedIssue = { ...issue };
 
 				if (updatedIssue.state) {
 					updatedIssue.state = {
@@ -165,9 +167,8 @@ export function App() {
 
 		mutateIssues({ ...currentIssues, data: updatedIssues });
 
-		// Update the cache with the modified issue
-		await updateIssueInCache(issueToUpdate.id, updatedIssues.find(i => i.id === issueToUpdate.id)!);
-	};
+		if (updatedIssue) await updateIssueInCache(issueToUpdate.id, updatedIssue);
+	})();
 
 	useKeyboard((evt) => {
 		if (evt.name === "q") {
