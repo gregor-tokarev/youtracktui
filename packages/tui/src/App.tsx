@@ -117,6 +117,59 @@ export function App() {
 		return null;
 	});
 
+	const handleStateChanged = createMemo(() => async (newState: BundleValue) => {
+		const currentIssues = issues();
+		const issueToUpdate = selectedIssue();
+
+		if (!currentIssues?.data || !issueToUpdate) return;
+
+		let updatedIssue: Issue | undefined;
+
+		const updatedIssues = currentIssues.data.map((issue) => {
+			if (issue.id === issueToUpdate.id) {
+				updatedIssue = { ...issue };
+
+				if (updatedIssue.state) {
+					updatedIssue.state = {
+						...updatedIssue.state,
+						id: newState.id,
+						name: newState.name,
+						resolved: newState.isResolved,
+					};
+				}
+
+				if (updatedIssue.customFields) {
+					updatedIssue.customFields = updatedIssue.customFields.map(
+						(cf) => {
+							if (cf.name === "State" || cf.name === "Status") {
+								const oldValue = Array.isArray(cf.value)
+									? cf.value[0]
+									: cf.value;
+								return {
+									...cf,
+									value: {
+										...(oldValue || {}),
+										id: newState.id,
+										name: newState.name,
+										presentation: newState.name,
+									},
+								};
+							}
+							return cf;
+						},
+					);
+				}
+
+				return updatedIssue;
+			}
+			return issue;
+		});
+
+		mutateIssues({ ...currentIssues, data: updatedIssues });
+
+		if (updatedIssue) await updateIssueInCache(issueToUpdate.id, updatedIssue);
+	})();
+
 	useKeyboard((evt) => {
 		if (evt.name === "q") {
 			renderer.destroy();
@@ -214,57 +267,7 @@ export function App() {
 				onClose={() => setStateModalOpen(false)}
 				issue={selectedIssue()}
 				youtrack={youtrack}
-				onStateChanged={async (newState: BundleValue) => {
-					const currentIssues = issues();
-					const issueToUpdate = selectedIssue();
-
-					if (!currentIssues?.data || !issueToUpdate) return;
-
-					const updatedIssues = currentIssues.data.map((issue) => {
-						if (issue.id === issueToUpdate.id) {
-							const updatedIssue = { ...issue };
-
-							if (updatedIssue.state) {
-								updatedIssue.state = {
-									...updatedIssue.state,
-									id: newState.id,
-									name: newState.name,
-									resolved: newState.isResolved,
-								};
-							}
-
-							if (updatedIssue.customFields) {
-								updatedIssue.customFields = updatedIssue.customFields.map(
-									(cf) => {
-										if (cf.name === "State" || cf.name === "Status") {
-											const oldValue = Array.isArray(cf.value)
-												? cf.value[0]
-												: cf.value;
-											return {
-												...cf,
-												value: {
-													...(oldValue || {}),
-													id: newState.id,
-													name: newState.name,
-													presentation: newState.name,
-												},
-											};
-										}
-										return cf;
-									},
-								);
-							}
-
-							return updatedIssue;
-						}
-						return issue;
-					});
-
-					mutateIssues({ ...currentIssues, data: updatedIssues });
-
-					// Update the cache with the modified issue
-					await updateIssueInCache(issueToUpdate.id, updatedIssues.find(i => i.id === issueToUpdate.id)!);
-				}}
+				onStateChanged={handleStateChanged}
 			/>
 		</box>
 	);
