@@ -36,3 +36,22 @@ export async function writeIssuesCache(
 
 	await Bun.write(cachePath, JSON.stringify(payload));
 }
+
+export async function updateIssueInCache(
+	issueId: string,
+	updatedIssue: Issue,
+): Promise<void> {
+	const cached = await readIssuesCache();
+	if (!cached || !cached.data) return;
+
+	const updatedIssues = cached.data.map((issue) =>
+		issue.id === issueId ? updatedIssue : issue
+	);
+
+	const updatedResponse: PaginatedResponse<Issue> = {
+		...cached,
+		data: updatedIssues,
+	};
+
+	await writeIssuesCache(updatedResponse);
+}

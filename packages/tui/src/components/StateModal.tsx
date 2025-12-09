@@ -126,6 +126,7 @@ export function StateModal(props: StateModalProps) {
 				fieldIdentifier,
 				updateValue,
 			);
+
 			props.onStateChanged(state);
 			props.onClose();
 		} catch (error) {

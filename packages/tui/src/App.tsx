@@ -8,7 +8,7 @@ import { StateModal } from "./components/StateModal";
 import { useSearch } from "./hooks/useSearch";
 import { useFilter } from "./hooks/useFilter";
 import type { Issue } from "@youtracktui/sdk";
-import { readIssuesCache, writeIssuesCache } from "./utils/issuesCache";
+import { readIssuesCache, writeIssuesCache, updateIssueInCache } from "./utils/issuesCache";
 
 export function App() {
 	const renderer = useRenderer();
@@ -214,7 +214,7 @@ export function App() {
 				onClose={() => setStateModalOpen(false)}
 				issue={selectedIssue()}
 				youtrack={youtrack}
-				onStateChanged={(newState: BundleValue) => {
+				onStateChanged={async (newState: BundleValue) => {
 					const currentIssues = issues();
 					const issueToUpdate = selectedIssue();
 
@@ -261,6 +261,9 @@ export function App() {
 					});
 
 					mutateIssues({ ...currentIssues, data: updatedIssues });
+
+					// Update the cache with the modified issue
+					await updateIssueInCache(issueToUpdate.id, updatedIssues.find(i => i.id === issueToUpdate.id)!);
 				}}
 			/>
 		</box>
