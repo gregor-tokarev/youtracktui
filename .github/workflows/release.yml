@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
           - os: macos-latest
             target: bun-darwin-arm64
             name: yt-macos-arm64
-          - os: macos-13
+          - os: macos-15-intel
             target: bun-darwin-x64
             name: yt-macos-x64
           - os: ubuntu-latest
@@ -24,26 +24,26 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      
+
       - name: Install dependencies
         run: bun ci
-      
+
       - name: Extract version
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       - name: Build binary
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           BUILD_TARGET: ${{ matrix.target }}
           BUILD_NAME: ${{ matrix.name }}
         run: bun run scripts/build-single.ts
-      
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -58,27 +58,27 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist/
           merge-multiple: true
-      
+
       - name: Extract version
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
       - name: Package Debian
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
         run: bun run scripts/package-deb.ts
-      
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -88,7 +88,7 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
