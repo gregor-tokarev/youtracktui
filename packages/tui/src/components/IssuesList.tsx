@@ -136,9 +136,8 @@ export function IssuesList(props: IssuesListProps) {
 			const issues = filteredIssues();
 			if (issues.length > 0 && focusedIssueIndex() < issues.length) {
 				const issue = issues[focusedIssueIndex()];
-				const slackLink = `${issue?.idReadable}_`;
 
-				copyToClipboard(slackLink);
+				issue?.idReadable && copyToClipboard(issue?.idReadable);
 				props.onUrlCopied?.();
 			}
 		}
