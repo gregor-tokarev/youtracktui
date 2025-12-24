@@ -6,7 +6,7 @@ type BunCompileTarget =
 	| "bun-linux-x64"
 	| "bun-windows-x64";
 
-const entrypoints = [process.env.BUILD_ENTRY ?? "./src/index.tsx"];
+const entrypoints = [process.env.BUILD_ENTRY ?? "./src/cli.tsx"];
 const outdir = process.env.BUILD_OUTDIR ?? "../../dist/tui";
 const compileTarget: BunCompileTarget =
 	(process.env.BUILD_TARGET as BunCompileTarget | undefined) ??

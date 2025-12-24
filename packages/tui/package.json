@@ -13,9 +13,13 @@
 		"@opentui/core": "^0.1.57",
 		"@opentui/solid": "^0.1.57",
 		"@youtracktui/sdk": "workspace:*",
-		"solid-js": "^1.9.10"
+		"solid-js": "^1.9.10",
+		"yargs": "^17.7.2"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
+	},
+	"devDependencies": {
+		"@types/yargs": "17.0.35"
 	}
 }

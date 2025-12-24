@@ -1,5 +1,6 @@
 {
 	"name": "youtracktui",
+	"version": "0.1.0",
 	"private": true,
 	"workspaces": [
 		"packages/sdk",
