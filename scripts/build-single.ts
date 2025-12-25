@@ -24,10 +24,13 @@ console.log(`Building ${name}...`);
 const outfile = "yt";
 
 await Bun.build({
-	entrypoints: ["./packages/tui/src/index.tsx"],
+	entrypoints: ["./packages/tui/src/cli.tsx"],
 	target: "bun",
 	outdir: buildDir,
 	plugins: [solidPlugin],
+	define: {
+		"process.env.npm_package_version": JSON.stringify(version),
+	},
 	compile: {
 		target: target as any,
 		outfile: join(buildDir, outfile),
