@@ -39,7 +39,11 @@ jobs:
 
       - name: Update version in package.json
         run: |
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${{ steps.version.outputs.VERSION }}\"/" package.json
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"${{ steps.version.outputs.VERSION }}\"/" package.json
+          else
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${{ steps.version.outputs.VERSION }}\"/" package.json
+          fi
           cat package.json | grep version
 
       - name: Commit version update
