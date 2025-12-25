@@ -101,16 +101,6 @@ main() {
     echo "✅ YouTrack TUI installed successfully!"
     echo ""
     
-    if [ "$(uname -s)" = "Darwin" ]; then
-        echo "⚠️  macOS Security Notice:"
-        echo "If you get a security warning when running 'yt', you can allow it by running:"
-        echo "  sudo xattr -cr $INSTALL_DIR/$BINARY_NAME"
-        echo "  sudo spctl --add $INSTALL_DIR/$BINARY_NAME"
-        echo ""
-        echo "Or go to System Settings → Privacy & Security and click 'Open Anyway'"
-        echo ""
-    fi
-    
     echo "To get started, set up your YouTrack credentials:"
     echo "  export YOUTRACK_BASE_URL=\"https://your-instance.youtrack.cloud\""
     echo "  export YOUTRACK_PERM_TOKEN=\"your-permanent-token\""
